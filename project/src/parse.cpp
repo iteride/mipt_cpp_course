@@ -1,74 +1,39 @@
 #include "../kit/include/l1.2/parse.h"
 
-#include <print>
 #include <string>
 
-bool nano_edr::IsBlankOrComment(const std::string* line) {
-    int ind = (*line).find_first_not_of(" \t");
-    if (ind == int(std::string::npos)) {
+namespace nano_edr {
+
+bool IsBlankOrComment(const std::string* line) {
+    const auto ind = line->find_first_not_of(" \t");
+    if (ind == std::string::npos) {
         return true;
     }
 
     return (*line).empty() || (*line)[ind] == '#' || (*line)[ind] == ';';
 }
 
-bool nano_edr::ParseEventLine(const std::string* line, Event* out) {
+bool ParseEventLine(const std::string* line, Event* out) {
     if (IsBlankOrComment(line)) {
         return false;
     }
     std::string str = *line + '\n';
-
-    int ind_ts = 0;
-    int ind_tp = 0;
-    int ind_pid = 0;
-    int ind = 0;
-    int end = 0;
+    size_t ind = 0;
+    size_t end = 0;
     std::string tims = "";
     std::string key, value;
-
-    ind = str.find("ts=");
-
-    if (ind == int(std::string::npos)) {
-        return false;
-    } else {
-        ind_ts = ind;
-        ind += 3;
-        end = str.find_first_of(" \n", ind);
-        out->ts = str.substr(ind, end - ind);
-        str.erase(ind_ts, end - ind_ts);
-    }
-
-    ind = str.find("type=");
-    if (ind == int(std::string::npos)) {
-        return false;
-    } else {
-        ind_tp = ind;
-        ind += 5;
-        end = str.find_first_of(" \n", ind);
-        out->type = str.substr(ind, end - ind);
-        str.erase(ind_tp, end - ind_tp);
-    }
-
-    ind = str.find("pid=");
-    if (ind != int(std::string::npos)) {
-        ind_pid = ind;
-        ind += 4;
-        end = str.find_first_of(" \n", ind);
-        out->pid = str.substr(ind, end - ind);
-        str.erase(ind_pid, end - ind_pid);
-    } else {
-        out->pid = "";
-    }
-    ind = 0;
-    while (ind < int(str.size()) - 1) {
-        ind = str.find_first_not_of(' ', ind);
-        if (ind >= int(str.size() - 1)) {
+    bool type = false;
+    bool ts = false;
+    bool pid = false;
+    while (ind < str.size() - size_t{1}) {
+        ind = str.find_first_not_of(" \t", ind);
+        if (ind >= str.size() - size_t{1}) {
             break;
         }
         if (str[ind] == '=') {
             return false;
         }
-        end = str.find_first_of("= \n", ind);
+        end = str.find_first_of("= \t\n", ind);
         if (str[end] != '=') {
             return false;
         }
@@ -79,21 +44,40 @@ bool nano_edr::ParseEventLine(const std::string* line, Event* out) {
         if (str[ind] == '"') {
             ind++;
             end = str.find('"', ind);
-            if (end == int(std::string::npos)) {
+            if (end == std::string::npos) {
                 return false;
             }
             value = str.substr(ind, end - ind);
             ind = end + 1;
-            if (str[ind] != ' ' && ind < int(str.size()) - 1) {
+            if ((str[ind] != ' ' && str[ind] != '\t') && ind < str.size() - size_t{1}) {
                 return false;
             }
         } else {
-            end = str.find_first_of(" \n", ind);
+            end = str.find_first_of(" \t\n", ind);
             value = str.substr(ind, end - ind);
             ind = end;
         }
-
+        if (key == "type" && !type) {
+            out->type = value;
+            type = true;
+            continue;
+        }
+        if (key == "ts" && !ts) {
+            out->ts = value;
+            ts = true;
+            continue;
+        }
+        if (key == "pid" && !pid) {
+            out->pid = value;
+            pid = true;
+            continue;
+        }
         out->fields.push_back({key, value});
+    }
+    if (!type || !ts) {
+        return false;
     }
     return true;
 }
+
+}  // namespace nano_edr

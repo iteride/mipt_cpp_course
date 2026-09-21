@@ -1,17 +1,20 @@
 #include "../kit/include/l1.2/event_list.h"
 
-nano_edr::EventList::~EventList() {
+namespace nano_edr {
+
+EventList::~EventList() {
     ListClear(this);
 }
 
-void nano_edr::ListClear(EventList* list) {
+void ListClear(EventList* list) {
     if (list->size != 0) {
-        EventNode *vrem = list->head, *t;
+        EventNode* tmp = list->head;
+        EventNode* next;
 
-        while (vrem != nullptr) {
-            t = vrem->next;
-            delete vrem;
-            vrem = t;
+        while (tmp != nullptr) {
+            next = tmp->next;
+            delete tmp;
+            tmp = next;
         }
     }
     list->head = nullptr;
@@ -19,23 +22,23 @@ void nano_edr::ListClear(EventList* list) {
     list->size = 0;
 }
 
-void nano_edr::ListPopFront(EventList* list) {
+void ListPopFront(EventList* list) {
     if (list->size != 0) {
-        EventNode* vrem = list->head;
+        EventNode* tmp = list->head;
         list->head = list->head->next;
-        if (list->size == 1) {
+        list->size--;
+        if (list->size == 0) {
             list->tail = nullptr;
         }
-        list->size--;
-        delete vrem;
+        delete tmp;
     }
 }
 
-void nano_edr::ListPushBack(EventList* list, const Event* event) {
+void ListPushBack(EventList* list, const Event* event) {
     if (list->size == list->capacity) {
         ListPopFront(list);
     }
-    EventNode* node = new EventNode;
+    EventNode* node = new EventNode{.event = *event};
     if (list->size == 0) {
         list->head = node;
         list->tail = node;
@@ -43,13 +46,7 @@ void nano_edr::ListPushBack(EventList* list, const Event* event) {
         list->tail->next = node;
         list->tail = node;
     }
-    node->event = *event;
     list->size++;
 }
 
-void nano_edr::EventClear(Event* out) {
-    out->pid = "";
-    out->ts = "";
-    out->type = "";
-    out->fields.clear();
-}
+}  // namespace nano_edr

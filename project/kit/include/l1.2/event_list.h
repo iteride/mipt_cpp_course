@@ -72,8 +72,6 @@ void ListPopFront(EventList* list);
 // Освобождает всё. После вызова список пуст, и пользоваться им можно снова.
 void ListClear(EventList* list);
 
-void EventClear(Event* out);
-
 }  // namespace nano_edr
 
 #endif  // NANO_EDR_KIT_EVENT_LIST_H
