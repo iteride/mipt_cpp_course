@@ -12,11 +12,11 @@
 
 int main(int argc, char** argv) {
     long long lines = 0;
-    long long comments = 0;
     std::string line;
     std::map<std::string, int> types;
     std::vector<std::string> warnings{"wscript.exe", ".locked", "certutil.exe", "\\Startup\\"};
-    int ind_t, j = 0;
+    int ind_t;
+    int j = 0;
     std::string type;
     bool flag = true;
     nano_edr::Event* out = new nano_edr::Event;
@@ -41,9 +41,9 @@ int main(int argc, char** argv) {
         }
 
         ind_t = args.find("--window-size");
-        if (ind_t != std::string::npos) {
+        if (ind_t != int(std::string::npos)) {
             ind_t = ind_t + 14;
-            while (ind_t < args.size() && args[ind_t] != ' ') {
+            while (ind_t < int(args.size()) && args[ind_t] != ' ') {
                 cap += args[ind_t];
                 ind_t++;
             }
@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
         qcopy = line;
         bool fof = nano_edr::ParseEventLine(&line, out);
         if (fof) {
-            for (int i = 0; i < warnings.size(); i++) {
+            for (int i = 0; i < int(warnings.size()); i++) {
                 if (line.find(warnings[i]) != std::string::npos) {
                     if (flag) {
                         j = std::max(int(list->size - ctx_count), 0);

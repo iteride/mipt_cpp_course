@@ -5,7 +5,7 @@
 
 bool nano_edr::IsBlankOrComment(const std::string* line) {
     int ind = (*line).find_first_not_of(" \t");
-    if (ind == std::string::npos) {
+    if (ind == int(std::string::npos)) {
         return true;
     }
 
@@ -18,13 +18,17 @@ bool nano_edr::ParseEventLine(const std::string* line, Event* out) {
     }
     std::string str = *line + '\n';
 
-    int ind_ts = 0, ind_tp = 0, ind_pid = 0, ind = 0, end = 0;
+    int ind_ts = 0;
+    int ind_tp = 0;
+    int ind_pid = 0;
+    int ind = 0;
+    int end = 0;
     std::string tims = "";
     std::string key, value;
 
     ind = str.find("ts=");
 
-    if (ind == std::string::npos) {
+    if (ind == int(std::string::npos)) {
         return false;
     } else {
         ind_ts = ind;
@@ -35,7 +39,7 @@ bool nano_edr::ParseEventLine(const std::string* line, Event* out) {
     }
 
     ind = str.find("type=");
-    if (ind == std::string::npos) {
+    if (ind == int(std::string::npos)) {
         return false;
     } else {
         ind_tp = ind;
@@ -46,7 +50,7 @@ bool nano_edr::ParseEventLine(const std::string* line, Event* out) {
     }
 
     ind = str.find("pid=");
-    if (ind != std::string::npos) {
+    if (ind != int(std::string::npos)) {
         ind_pid = ind;
         ind += 4;
         end = str.find_first_of(" \n", ind);
@@ -56,9 +60,9 @@ bool nano_edr::ParseEventLine(const std::string* line, Event* out) {
         out->pid = "";
     }
     ind = 0;
-    while (ind < str.size() - 1) {
+    while (ind < int(str.size()) - 1) {
         ind = str.find_first_not_of(' ', ind);
-        if (ind >= str.size() - 1) {
+        if (ind >= int(str.size() - 1)) {
             break;
         }
         if (str[ind] == '=') {
@@ -75,12 +79,12 @@ bool nano_edr::ParseEventLine(const std::string* line, Event* out) {
         if (str[ind] == '"') {
             ind++;
             end = str.find('"', ind);
-            if (end == std::string::npos) {
+            if (end == int(std::string::npos)) {
                 return false;
             }
             value = str.substr(ind, end - ind);
             ind = end + 1;
-            if (str[ind] != ' ' && ind < str.size() - 1) {
+            if (str[ind] != ' ' && ind < int(str.size()) - 1) {
                 return false;
             }
         } else {
