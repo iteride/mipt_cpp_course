@@ -1,4 +1,4 @@
-#include "../kit/include/l1.2/event_list.h"
+#include "event_list.h"
 
 namespace nano_edr {
 
