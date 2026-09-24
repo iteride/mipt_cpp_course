@@ -1,4 +1,4 @@
-#include "../kit/include/l1.3/fields.h"
+#include "fields.h"
 
 #include <stdexcept>
 
@@ -22,9 +22,9 @@ const std::string& GetRequiredField(const Event& event, const std::string& key) 
     throw std::invalid_argument("field " + key + " not found");
 }
 
-bool is_number(const std::string& value) {
-    for (size_t i = 0; i < value.size(); i++) {
-        if (value[i] < '0' || value[i] > '9') {
+bool is_number(const std::string* value) {
+    for (size_t i = 0; i < value->size(); i++) {
+        if ((*value)[i] < '0' || (*value)[i] > '9') {
             return false;
         }
     }
@@ -32,27 +32,29 @@ bool is_number(const std::string& value) {
 }
 
 bool GetIntField(const Event& event, const std::string& key, uint64_t* out) {
-    for (size_t i = 0; i < event.fields.size(); ++i) {
-        if (event.fields[i].key == key) {
-            if (is_number(event.fields[i].value)) {
-                *out = std::stoi(event.fields[i].value);
+    const std::string* value = FindField(event, key);
+    if (value != nullptr) {
+        if (is_number(value)) {
+            try {
+                *out = std::stoi(*value);
                 return true;
-            } else {
+            } catch (const std::exception& error) {
                 return false;
             }
+        } else {
+            return false;
         }
     }
     return false;
 }
 
 uint64_t GetIntField(const Event& event, const std::string& key, uint64_t fallback) {
-    for (size_t i = 0; i < event.fields.size(); ++i) {
-        if (event.fields[i].key == key) {
-            if (is_number(event.fields[i].value)) {
-                return std::stoi(event.fields[i].value);
-            } else {
-                return fallback;
-            }
+    const std::string* value = FindField(event, key);
+    if (value != nullptr) {
+        if (is_number(value)) {
+            return std::stoi(*value);
+        } else {
+            return fallback;
         }
     }
     return fallback;
@@ -69,12 +71,26 @@ bool IsNetConnect(const Event& event) {
 }
 bool PathEndsWith(const Event& event, const std::string& suffix) {
     std::string path_end;
-    for (size_t i = 0; i < event.fields.size(); i++) {
-        if (event.fields[i].key == "path") {
-            if (suffix.size() <= event.fields[i].value.size()) {
-                path_end = event.fields[i].value.substr(event.fields[i].value.size() - suffix.size(), suffix.size());
+    const std::string* value = FindField(event, "path");
+    if (value != nullptr) {
+        if (suffix.size() <= value->size()) {
+            path_end = value->substr(value->size() - suffix.size(), suffix.size());
+            for (size_t j = 0; j < path_end.size(); j++) {
+                if (std::tolower(static_cast<unsigned char>(path_end[j])) != std::tolower(static_cast<unsigned char>(suffix[j]))) {
+                    return false;
+                }
+            }
+            return true;
+        } else {
+            return false;
+        }
+    } else {
+        const std::string* value = FindField(event, "to");
+        if (value != nullptr) {
+            if (suffix.size() <= value->size()) {
+                path_end = value->substr(value->size() - suffix.size(), suffix.size());
                 for (size_t j = 0; j < path_end.size(); j++) {
-                    if (std::tolower(static_cast<unsigned char>(path_end[j])) != suffix[j]) {
+                    if (std::tolower(static_cast<unsigned char>(path_end[j])) != std::tolower(static_cast<unsigned char>(suffix[j]))) {
                         return false;
                     }
                 }
@@ -88,17 +104,17 @@ bool PathEndsWith(const Event& event, const std::string& suffix) {
 }
 
 bool CommandLineContains(const Event& event, const std::string& needle) {
-    std::string no_reg = "";
-    for (size_t i = 0; i < event.fields.size(); i++) {
-        if (event.fields[i].key == "cmdline") {
-            for (size_t j = 0; j < event.fields[i].value.size(); j++) {
-                no_reg += std::tolower(static_cast<unsigned char>(event.fields[i].value[j]));
-            }
-            if (no_reg.find(needle) == std::string::npos) {
-                return false;
-            } else {
-                return true;
-            }
+    std::string needle_no_reg = "";
+    const std::string* value = FindField(event, "cmdline");
+    if (value != nullptr) {
+        const std::string no_reg = NormalizePath(*value);
+        for (size_t j = 0; j < needle.size(); j++) {
+            needle_no_reg += std::tolower(static_cast<unsigned char>(needle[j]));
+        }
+        if (no_reg.find(needle_no_reg) == std::string::npos) {
+            return false;
+        } else {
+            return true;
         }
     }
     return false;
@@ -132,12 +148,3 @@ std::string NormalizePath(const std::string& path) {
     return normalize_path;
 }
 }  // namespace nano_edr
-
-/*using namespace nano_edr;
-
-int main() {
-    std::string test;
-    std::cin >> test;
-    std::cout << NormalizePath(test) << std::endl;
-}
-// namespace nano_edr*/

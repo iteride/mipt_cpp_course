@@ -1,18 +1,19 @@
-#include <algorithm>
+
 #include <cstdio>
 #include <fstream>
 #include <print>
 #include <string>
 #include <vector>
 
+#include "agent_rules.h"
 #include "event.h"
 #include "event_list.h"
 #include "parse.h"
+#include "rules.h"
 
 using namespace nano_edr;
 
 int main(int argc, char** argv) {
-    long long lines = 0;
     std::string line;
     std::vector<std::string> warnings{"wscript.exe", ".locked", "certutil.exe", "\\Startup\\"};
     size_t ind_t = 0;
@@ -22,6 +23,7 @@ int main(int argc, char** argv) {
     EventList list;
     EventNode* prevtail = nullptr;
     size_t ctx_count = 2;
+    size_t detects = 0;
 
     if (argc < 2) {
         std::print(stderr, "использование: nano-edr <журнал.log>\n");
@@ -47,29 +49,33 @@ int main(int argc, char** argv) {
     }
 
     while (std::getline(log, line)) {
-        ++lines;
-        bool fof = ParseEventLine(&line, &out);
-        if (fof) {
-            for (size_t i = 0; i < warnings.size(); i++) {
-                if (line.find(warnings[i]) != std::string::npos) {
-                    if (!quiet) {
-                        context_size = std::max(list.size - ctx_count, size_t{0});
-                        ind_t = size_t{0};
-                        prevtail = list.head;
-                        while (prevtail != nullptr) {
-                            if (ind_t >= context_size) {
-                                std::print("[CTX] -{}: ts={} type={} pid={}\n", list.size - ind_t, prevtail->event.ts, prevtail->event.type, prevtail->event.pid);
-                            }
-                            ind_t += 1;
-                            prevtail = prevtail->next;
+        bool is_event_valid = ParseEventLine(&line, &out);
+        if (is_event_valid) {
+            ListPushBack(&list, &out);
+            size_t rule_count = AgentRuleCount();
+            const Rule* rules = AgentRules();
+            try {
+                detects = CheckRules(out, rules, rule_count);
+            } catch (const std::exception& error) {
+                std::print("{}\n", error.what());
+            }
+            if (!quiet) {
+                if (detects) {
+                    context_size = std::max(list.size - ctx_count - 1, size_t{0});
+                    ind_t = size_t{0};
+                    prevtail = list.head;
+                    while (prevtail != nullptr) {
+                        if (ind_t >= context_size && ind_t < list.size - 1) {
+                            std::print("[CTX] -{}: ts={} type={} pid={}\n", list.size - ind_t - 1, prevtail->event.ts, prevtail->event.type, prevtail->event.pid);
                         }
+                        ind_t += 1;
+                        prevtail = prevtail->next;
                     }
-                    std::print("[DETECT] строка {}, признак {}: {}\n", lines, warnings[i], line);
                 }
             }
-            ListPushBack(&list, &out);
             out.pid = "";
             out.fields.clear();
+            detects = 0;
         }
     }
     return 0;
