@@ -4,6 +4,13 @@
 
 namespace nano_edr {
 
+constexpr Rule kRules[] = {
+    {"script_host_from_temp", ScriptHostFromTemp, Severity::kHigh},
+    {"lolbin_download", LolblinDownload, Severity::kHigh},
+    {"hidden_powershell", HiddenPowershell, Severity::kMedium},
+    {"autostart_write", AutostartWrite, Severity::kHigh},
+    {"ransom_extension", RansomExtension, Severity::kCritical}};
+
 const Rule* AgentRules() { return kRules; }
 size_t AgentRuleCount() { return sizeof(kRules) / sizeof(kRules[0]); }
 
@@ -21,7 +28,7 @@ bool ScriptHostFromTemp(const Event& event) {
 
 bool LolblinDownload(const Event& event) {
     if (IsProcessStart(event)) {
-        std::string value = NormalizePath(GetRequiredField(event, "image"));
+        const std::string& value = NormalizePath(GetRequiredField(event, "image"));
         if (value.find("certutil.exe") != std::string::npos || value.find("bitsadmin.exe") != std::string::npos) {
             if (CommandLineContains(event, "urlcache") || CommandLineContains(event, "transfer") || CommandLineContains(event, "http:") || CommandLineContains(event, "https:")) {
                 return true;
@@ -32,7 +39,7 @@ bool LolblinDownload(const Event& event) {
 }
 bool HiddenPowershell(const Event& event) {
     if (IsProcessStart(event)) {
-        std::string value = GetRequiredField(event, "image");
+        const std::string& value = NormalizePath(GetRequiredField(event, "image"));
         if (value.find("powershell.exe") != std::string::npos || value.find("pwsh.exe") != std::string::npos) {
             if (CommandLineContains(event, "-w hidden") || CommandLineContains(event, "-windowstyle hidden") || CommandLineContains(event, "-enc") || CommandLineContains(event, "-encodedcommand")) {
                 return true;

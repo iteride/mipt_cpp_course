@@ -37,15 +37,6 @@ bool ScriptHostFromTemp(const Event& event);
 bool LolblinDownload(const Event& event);
 bool HiddenPowershell(const Event& event);
 bool AutostartWrite(const Event& event);
-bool RansomExtension(const Event& event);
-
-constexpr Rule kRules[] = {
-    {"script_host_from_temp", ScriptHostFromTemp, Severity::kHigh},
-    {"lolbin_download", LolblinDownload, Severity::kHigh},
-    {"hidden_powershell", HiddenPowershell, Severity::kMedium},
-    {"autostart_write", AutostartWrite, Severity::kHigh},
-    {"ransom_extension", RansomExtension, Severity::kCritical}};
-
+bool RansomExtension(const Event& event);  // namespace nano_edr
 }  // namespace nano_edr
-
 #endif  // NANO_EDR_AGENT_RULES_H
