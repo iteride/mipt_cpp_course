@@ -52,7 +52,11 @@ uint64_t GetIntField(const Event& event, const std::string& key, uint64_t fallba
     const std::string* value = FindField(event, key);
     if (value != nullptr) {
         if (is_number(value)) {
-            return std::stoi(*value);
+            try {
+                return std::stoi(*value);
+            } catch (const std::exception& error) {
+                return false;
+            }
         } else {
             return fallback;
         }
