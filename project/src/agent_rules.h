@@ -26,6 +26,7 @@
 #ifndef NANO_EDR_AGENT_RULES_H
 #define NANO_EDR_AGENT_RULES_H
 
+#include "event.h"
 #include "rules.h"
 namespace nano_edr {
 

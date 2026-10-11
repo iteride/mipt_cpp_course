@@ -4,20 +4,20 @@
 
 namespace nano_edr {
 
-bool IsBlankOrComment(const std::string* line) {
-    const auto ind = line->find_first_not_of(" \t");
+bool IsBlankOrComment(const std::string& line) {
+    const auto ind = line.find_first_not_of(" \t");
     if (ind == std::string::npos) {
         return true;
     }
 
-    return (*line).empty() || (*line)[ind] == '#' || (*line)[ind] == ';';
+    return line.empty() || line[ind] == '#' || line[ind] == ';';
 }
 
-bool ParseEventLine(const std::string* line, Event* out) {
+bool ParseEventParts(const std::string& line, EventParts* out) {
     if (IsBlankOrComment(line)) {
         return false;
     }
-    std::string str = *line + '\n';
+    std::string str = line + '\n';
     size_t ind = 0;
     size_t end = 0;
     std::string tims = "";
@@ -73,9 +73,6 @@ bool ParseEventLine(const std::string* line, Event* out) {
             continue;
         }
         out->fields.push_back({key, value});
-    }
-    if (!type || !ts) {
-        return false;
     }
     return true;
 }
