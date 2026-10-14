@@ -1,6 +1,5 @@
 #include "agent_rules.h"
 
-#include <exception>
 #include <string>
 
 #include "event.h"
@@ -20,15 +19,11 @@ size_t AgentRuleCount() { return sizeof(kRules) / sizeof(kRules[0]); }
 
 bool ScriptHostFromTemp(const Event& event) {
     if (IsProcessStart(event)) {
-        try {
-            std::string value = NormalizePath(GetRequiredField(event, "image"));
-            if (value.find("wscript.exe") != std::string::npos || value.find("cscript.exe") != std::string::npos) {
-                if (CommandLineContains(event, "\\appdata\\local\\temp\\") || CommandLineContains(event, "\\windows\\temp\\")) {
-                    return true;
-                }
+        std::string value = NormalizePath(GetRequiredField(event, "image"));
+        if (value.ends_with("wscript.exe") || value.ends_with("cscript.exe")) {
+            if (CommandLineContains(event, "\\appdata\\local\\temp\\") || CommandLineContains(event, "\\windows\\temp\\")) {
+                return true;
             }
-        } catch (const std::exception& e) {
-            return false;
         }
     }
     return false;
@@ -36,30 +31,22 @@ bool ScriptHostFromTemp(const Event& event) {
 
 bool LolblinDownload(const Event& event) {
     if (IsProcessStart(event)) {
-        try {
-            const std::string& value = NormalizePath(GetRequiredField(event, "image"));
-            if (value.find("certutil.exe") != std::string::npos || value.find("bitsadmin.exe") != std::string::npos) {
-                if (CommandLineContains(event, "urlcache") || CommandLineContains(event, "transfer") || CommandLineContains(event, "http:") || CommandLineContains(event, "https:")) {
-                    return true;
-                }
+        const std::string& value = NormalizePath(GetRequiredField(event, "image"));
+        if (value.ends_with("certutil.exe") || value.ends_with("bitsadmin.exe")) {
+            if (CommandLineContains(event, "urlcache") || CommandLineContains(event, "transfer") || CommandLineContains(event, "http:") || CommandLineContains(event, "https:")) {
+                return true;
             }
-        } catch (const std::exception& e) {
-            return false;
         }
     }
     return false;
 }
 bool HiddenPowershell(const Event& event) {
     if (IsProcessStart(event)) {
-        try {
-            const std::string& value = NormalizePath(GetRequiredField(event, "image"));
-            if (value.find("powershell.exe") != std::string::npos || value.find("pwsh.exe") != std::string::npos) {
-                if (CommandLineContains(event, "-w hidden") || CommandLineContains(event, "-windowstyle hidden") || CommandLineContains(event, "-enc") || CommandLineContains(event, "-encodedcommand")) {
-                    return true;
-                }
+        const std::string& value = NormalizePath(GetRequiredField(event, "image"));
+        if (value.ends_with("powershell.exe") || value.ends_with("pwsh.exe")) {
+            if (CommandLineContains(event, "-w hidden") || CommandLineContains(event, "-windowstyle hidden") || CommandLineContains(event, "-enc") || CommandLineContains(event, "-encodedcommand")) {
+                return true;
             }
-        } catch (const std::exception& e) {
-            return false;
         }
     }
     return false;

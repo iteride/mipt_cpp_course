@@ -1,3 +1,5 @@
+#pragma once
+
 #include "agent.h"
 #include "os_handle.h"
 

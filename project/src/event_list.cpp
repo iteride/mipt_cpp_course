@@ -7,19 +7,10 @@ EventList::~EventList() {
 }
 
 void EventList::Clear() {
-    if (size_ != 0) {
-        EventNode* tmp = head_;
-        EventNode* next;
-
-        while (tmp != nullptr) {
-            next = tmp->next;
-            delete tmp;
-            tmp = next;
-        }
+    while (size_ != 0) {
+        PopFront();
     }
     head_ = nullptr;
-    tail_ = nullptr;
-    size_ = 0;
 }
 
 void EventList::PopFront() {
@@ -35,7 +26,7 @@ void EventList::PopFront() {
 }
 
 void EventList::PushBack(const Event& event) {
-    if (size_ == capacity_) {
+    if (capacity_ != 0 && size_ >= capacity_) {
         PopFront();
     }
     EventNode* node = new EventNode(event);

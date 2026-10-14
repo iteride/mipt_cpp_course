@@ -7,13 +7,11 @@
 namespace nano_edr {
 
 OsHandle::OsHandle(const std::string& config_path) {
-    os_handle* out = NULL;
-    os_status st = os_init(config_path.c_str(), &out);
+    os_status st = os_init(config_path.c_str(), &handle_);
     if (st != OS_OK) {
         throw std::runtime_error(
             "os_init failed for '" + config_path + "': " + os_status_str(st));
     }
-    handle_ = out;
 }
 
 OsHandle::~OsHandle() {
