@@ -5,18 +5,36 @@
 namespace nano_edr {
 
 const std::string* FindField(const Event& event, const std::string& key) {
-    for (size_t i = 0; i < event.fields.size(); ++i) {
-        if (event.fields[i].key == key) {
-            return &event.fields[i].value;
+    if (key == "type") {
+        return &event.type();
+    }
+    if (key == "ts") {
+        return &event.raw_ts();
+    }
+    if (key == "pid") {
+        return &event.pid();
+    }
+    for (size_t i = 0; i < event.fields().size(); ++i) {
+        if (event.fields()[i].key == key) {
+            return &event.fields()[i].value;
         }
     }
     return nullptr;
 }
 
 const std::string& GetRequiredField(const Event& event, const std::string& key) {
-    for (size_t i = 0; i < event.fields.size(); ++i) {
-        if (event.fields[i].key == key) {
-            return event.fields[i].value;
+    if (key == "type") {
+        return event.type();
+    }
+    if (key == "ts") {
+        return event.raw_ts();
+    }
+    if (key == "pid") {
+        return event.pid();
+    }
+    for (size_t i = 0; i < event.fields().size(); ++i) {
+        if (event.fields()[i].key == key) {
+            return event.fields()[i].value;
         }
     }
     throw std::invalid_argument("field " + key + " not found");
@@ -65,13 +83,13 @@ uint64_t GetIntField(const Event& event, const std::string& key, uint64_t fallba
 }
 
 bool IsProcessStart(const Event& event) {
-    return event.type == "process_start";
+    return event.type() == "process_start";
 }
 bool IsFileWrite(const Event& event) {
-    return event.type == "file_write";
+    return event.type() == "file_write";
 }
 bool IsNetConnect(const Event& event) {
-    return event.type == "net_connect";
+    return event.type() == "net_connect";
 }
 bool PathEndsWith(const Event& event, const std::string& suffix) {
     std::string path_end;
