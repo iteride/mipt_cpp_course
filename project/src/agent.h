@@ -10,7 +10,7 @@
 namespace nano_edr {
 class Agent {
  public:
-    Agent(size_t window_size, bool quiet);  // из --window-size и --quiet
+    Agent(size_t window_size, bool quiet, size_t context_size);  // из --window-size и --quiet
     static void Trampoline(const os_event* ev, void* ctx) noexcept;
     void HandleEvent(const Event& event);
     void PrintSummary() const;
@@ -19,6 +19,7 @@ class Agent {
     EventList window_;
     bool quiet_ = false;
     size_t summary_ = 0;
+    size_t context_size_ = 2;
     std::map<std::string, size_t> types;
     std::deque<const EventNode*> context_;
     // счётчики для сводки

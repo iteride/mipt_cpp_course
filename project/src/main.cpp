@@ -5,7 +5,8 @@
 #include <print>
 #include <string>
 
-#include "source.h"
+#include "file_source.h"
+#include "os_source.h"
 
 using namespace nano_edr;
 
@@ -15,6 +16,7 @@ int main(int argc, char** argv) {
     bool file = false;
     std::string path;
     std::string args = "";
+    size_t context_size = 2;
     if (argc < 2) {
         std::print(stderr, "использование: nano-edr <журнал.log>\n");
         return 2;
@@ -62,7 +64,7 @@ int main(int argc, char** argv) {
             return 2;
         }
     }
-    Agent agent{ctx_count, quiet};
+    Agent agent{ctx_count, quiet, context_size};
     try {
         if (!file) {
             OsSource src(path);

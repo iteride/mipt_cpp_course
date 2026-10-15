@@ -9,7 +9,7 @@
 #include "rules.h"
 
 namespace nano_edr {
-Agent::Agent(std::size_t window_size, bool quiet) : window_(window_size), quiet_(quiet) {
+Agent::Agent(std::size_t window_size, bool quiet, size_t context_size) : window_(window_size), quiet_(quiet), context_size_(context_size) {
 }
 
 void Agent::PrintSummary() const {
@@ -51,14 +51,13 @@ void Agent::Trampoline(const os_event* ev, void* ctx) noexcept {
 }
 
 void Agent::HandleEvent(const Event& event) {
-    size_t context_size = 2;
     if (window_.capacity()) {
-        context_size = std::min(window_.capacity(), context_size);
+        context_size_ = std::min(window_.capacity(), context_size_);
     }
     if (!window_.empty()) {
         context_.push_back(window_.back());
     }
-    if (context_.size() > context_size) {
+    if (context_.size() > context_size_) {
         context_.pop_front();
     }
     size_t detects = CheckRules(event, AgentRules(), AgentRuleCount());
