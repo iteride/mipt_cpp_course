@@ -1,7 +1,5 @@
 #include "rules.h"
 
-#include <iostream>
-#include <vector>
 namespace nano_edr {
 
 const char* SeverityName(Severity severity) {
@@ -20,7 +18,7 @@ const char* SeverityName(Severity severity) {
     return "?";
 }
 
-size_t CheckRules(const Event& event, const Rule* rules, size_t rule_count) {
+/*size_t CheckRules(const Event& event, const Rule* rules, size_t rule_count) {
     size_t detects = 0;
     std::vector<std::string> detect;
     for (size_t i = 0; i < rule_count; i++) {
@@ -37,5 +35,5 @@ size_t CheckRules(const Event& event, const Rule* rules, size_t rule_count) {
         std::cout << detect[i] << std::endl;
     }
     return detects;
-}
+}*/
 }  // namespace nano_edr

@@ -2,6 +2,8 @@
 
 #include <stdexcept>
 
+#include "text.h"
+
 namespace nano_edr {
 
 const std::string* FindField(const Event& event, const std::string& key) {
@@ -92,17 +94,15 @@ bool IsNetConnect(const Event& event) {
     return event.type() == "net_connect";
 }
 bool PathEndsWith(const Event& event, const std::string& suffix) {
-    std::string path_end;
     const std::string* value = FindField(event, "path");
     if (value != nullptr) {
         if (suffix.size() <= value->size()) {
-            path_end = value->substr(value->size() - suffix.size(), suffix.size());
-            for (size_t j = 0; j < path_end.size(); j++) {
-                if (std::tolower(static_cast<unsigned char>(path_end[j])) != std::tolower(static_cast<unsigned char>(suffix[j]))) {
-                    return false;
-                }
+            const std::string path_end = To_Lower(value->substr(value->size() - suffix.size(), suffix.size()));
+            if (path_end == To_Lower(suffix)) {
+                return true;
+            } else {
+                return false;
             }
-            return true;
         } else {
             return false;
         }
@@ -110,13 +110,12 @@ bool PathEndsWith(const Event& event, const std::string& suffix) {
         const std::string* value = FindField(event, "to");
         if (value != nullptr) {
             if (suffix.size() <= value->size()) {
-                path_end = value->substr(value->size() - suffix.size(), suffix.size());
-                for (size_t j = 0; j < path_end.size(); j++) {
-                    if (std::tolower(static_cast<unsigned char>(path_end[j])) != std::tolower(static_cast<unsigned char>(suffix[j]))) {
-                        return false;
-                    }
+                const std::string path_end = To_Lower(value->substr(value->size() - suffix.size(), suffix.size()));
+                if (path_end == To_Lower(suffix)) {
+                    return true;
+                } else {
+                    return false;
                 }
-                return true;
             } else {
                 return false;
             }
@@ -126,14 +125,10 @@ bool PathEndsWith(const Event& event, const std::string& suffix) {
 }
 
 bool CommandLineContains(const Event& event, const std::string& needle) {
-    std::string needle_no_reg = "";
     const std::string* value = FindField(event, "cmdline");
     if (value != nullptr) {
         const std::string no_reg = NormalizePath(*value);
-        for (size_t j = 0; j < needle.size(); j++) {
-            needle_no_reg += std::tolower(static_cast<unsigned char>(needle[j]));
-        }
-        if (no_reg.find(needle_no_reg) == std::string::npos) {
+        if (no_reg.find(To_Lower(needle)) == std::string::npos) {
             return false;
         } else {
             return true;
@@ -150,7 +145,7 @@ std::string NormalizePath(const std::string& path) {
             normalize_path += std::tolower(static_cast<unsigned char>(path[ind]));
             ind++;
         }
-        if (path[ind] == '/' || path[ind] == '\\') {
+        if (ind < path.size() && (path[ind] == '/' || path[ind] == '\\')) {
             normalize_path += '\\';
         }
         while (ind < path.size() && (path[ind] == '/' || path[ind] == '\\')) {

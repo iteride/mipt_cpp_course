@@ -6,6 +6,7 @@
 #include "event.h"
 #include "event_list.h"
 #include "os.h"
+#include "rule.h"
 
 namespace nano_edr {
 class Agent {
@@ -22,6 +23,7 @@ class Agent {
     size_t context_size_ = 2;
     std::map<std::string, size_t> types;
     std::deque<const EventNode*> context_;
+    std::vector<MatchRule> rules_;
     // счётчики для сводки
 };
 }  // namespace nano_edr

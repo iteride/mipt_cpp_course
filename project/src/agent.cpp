@@ -9,14 +9,19 @@
 #include "rules.h"
 
 namespace nano_edr {
-Agent::Agent(std::size_t window_size, bool quiet, size_t context_size) : window_(window_size), quiet_(quiet), context_size_(context_size) {
+Agent::Agent(std::size_t window_size, bool quiet, size_t context_size) : window_(window_size), quiet_(quiet), context_size_(context_size), rules_(BuildAgentRules()) {
 }
 
 void Agent::PrintSummary() const {
     if (!quiet_) {
-        std::print("total number of events: {}\n", summary_);
+        std::print("\ntotal number of events: {}\n", summary_);
         for (const auto& [type, count] : types) {
             std::print("{} : {}\n", type, count);
+        }
+
+        std::print("\ndetects on rules:\n");
+        for (size_t i = 0; i < rules_.size(); i++) {
+            std::print("{}: {}\n", rules_[i].id(), rules_[i].hits());
         }
     }
 }
@@ -60,14 +65,19 @@ void Agent::HandleEvent(const Event& event) {
     if (context_.size() > context_size_) {
         context_.pop_front();
     }
-    size_t detects = CheckRules(event, AgentRules(), AgentRuleCount());
-    types[event.type()]++;
-    summary_++;
-    if (detects > 0 && !quiet_) {
-        for (size_t i = 0; i < context_.size(); i++) {
-            std::print("[CTX] -{}: ts={} type={} pid={}\n", context_.size() - i, context_[i]->event.raw_ts(), context_[i]->event.type(), context_[i]->event.pid());
+    for (size_t i = 0; i < rules_.size(); i++) {
+        if (rules_[i].Check(event)) {
+            if (!quiet_) {
+                for (size_t i = 0; i < context_.size(); i++) {
+                    std::print("[CTX] -{}: ts={} type={} pid={}\n", context_.size() - i, context_[i]->event.raw_ts(), context_[i]->event.type(), context_[i]->event.pid());
+                }
+            }
+            std::print("[DETECT] {}  {}  ts={} pid={}\n", SeverityName(rules_[i].severity()), rules_[i].id(), event.raw_ts(),
+                       event.pid());
         }
     }
+    types[event.type()]++;
+    summary_++;
     window_.PushBack(event);
 }
 }  // namespace nano_edr

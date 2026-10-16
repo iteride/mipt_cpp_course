@@ -28,18 +28,11 @@
 #ifndef NANO_EDR_AGENT_RULES_H
 #define NANO_EDR_AGENT_RULES_H
 
-#include "event.h"
-#include "rules.h"
+#include "rule.h"
 namespace nano_edr {
 
 // Таблица правил агента и её длина — ровно то, что принимает CheckRules.
-const Rule* AgentRules();
-size_t AgentRuleCount();
 
-bool ScriptHostFromTemp(const Event& event);
-bool LolblinDownload(const Event& event);
-bool HiddenPowershell(const Event& event);
-bool AutostartWrite(const Event& event);
-bool RansomExtension(const Event& event);  // namespace nano_edr
+std::vector<MatchRule> BuildAgentRules();
 }  // namespace nano_edr
 #endif  // NANO_EDR_AGENT_RULES_H
