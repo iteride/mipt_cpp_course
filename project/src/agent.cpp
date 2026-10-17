@@ -10,12 +10,15 @@
 
 namespace nano_edr {
 Agent::Agent(std::size_t window_size, bool quiet, size_t context_size) : window_(window_size), quiet_(quiet), context_size_(context_size), rules_(BuildAgentRules()) {
+    if (window_size) {
+        context_size_ = std::min(context_size_, window_size);
+    }
 }
 
 void Agent::PrintSummary() const {
     if (!quiet_) {
         std::print("\ntotal number of events: {}\n", summary_);
-        for (const auto& [type, count] : types) {
+        for (const auto& [type, count] : types_) {
             std::print("{} : {}\n", type, count);
         }
 
@@ -23,9 +26,12 @@ void Agent::PrintSummary() const {
         for (size_t i = 0; i < rules_.size(); i++) {
             std::print("{}: {}\n", rules_[i].id(), rules_[i].hits());
         }
+
+        std::print("\nInvalid events: {}\n", invalid_events_);
     }
 }
 
+namespace {
 Event ToEvent(const os_event* ev) {
     EventParts part;
     part.ts = std::to_string(ev->ts);
@@ -45,38 +51,43 @@ Event ToEvent(const os_event* ev) {
     Event event(part);
     return event;
 }
+}  // namespace
 
 void Agent::Trampoline(const os_event* ev, void* ctx) noexcept {
+    auto self = static_cast<Agent*>(ctx);
     try {
         const Event event = ToEvent(ev);
-        static_cast<Agent*>(ctx)->HandleEvent(event);
+        self->HandleEvent(event);
     } catch (const std::exception& e) {
+        self->invalid_events_++;
         std::print(stderr, "exception in trampoline {}\n", e.what());
+    } catch (...) {
+        self->invalid_events_++;
+        std::print(stderr, "unknown exception in trampoline\n");
     }
 }
 
 void Agent::HandleEvent(const Event& event) {
-    if (window_.capacity()) {
-        context_size_ = std::min(window_.capacity(), context_size_);
-    }
     if (!window_.empty()) {
         context_.push_back(window_.back());
     }
     if (context_.size() > context_size_) {
         context_.pop_front();
     }
+    bool context = false;
     for (size_t i = 0; i < rules_.size(); i++) {
         if (rules_[i].Check(event)) {
-            if (!quiet_) {
-                for (size_t i = 0; i < context_.size(); i++) {
-                    std::print("[CTX] -{}: ts={} type={} pid={}\n", context_.size() - i, context_[i]->event.raw_ts(), context_[i]->event.type(), context_[i]->event.pid());
+            if (!quiet_ && !context) {
+                for (size_t j = 0; j < context_.size(); j++) {
+                    std::print("[CTX] -{}: ts={} type={} pid={}\n", context_.size() - j, context_[j]->event.raw_ts(), context_[j]->event.type(), context_[j]->event.pid());
                 }
+                context = true;
             }
             std::print("[DETECT] {}  {}  ts={} pid={}\n", SeverityName(rules_[i].severity()), rules_[i].id(), event.raw_ts(),
                        event.pid());
         }
     }
-    types[event.type()]++;
+    types_[event.type()]++;
     summary_++;
     window_.PushBack(event);
 }

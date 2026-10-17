@@ -8,17 +8,20 @@
 
 namespace nano_edr {
 
-MatchRule Make_script_host_from_temp() {
+namespace {
+MatchRule MakeScriptHostFromTemp() {
     MatchRule rule("script_host_from_temp", Severity::kHigh);
     rule.AddCondition(Condition::Equals("type", {"process_start"}));
     rule.AddCondition(
         Condition::EndsWith("image", {"wscript.exe", "cscript.exe"}));
-    rule.AddCondition(Condition::Contains("cmdline", {"\\appdata\\local\\temp\\", "\\windows\\temp\\"}));
+    rule.AddCondition(Condition::Contains("cmdline", {"\\appdata\\local\\temp\\", "/appdata/local/temp/",
+                                                      "\\windows\\temp\\", "/windows/temp/",
+                                                      "%temp%", "%tmp%"}));
     rule.AddAction("kill_process");
     return rule;
 }
 
-MatchRule Make_lolblin_download() {
+MatchRule MakeLolbinDownload() {
     MatchRule rule("lolbin_download", Severity::kHigh);
     rule.AddCondition(Condition::Equals("type", {"process_start"}));
     rule.AddCondition(Condition::EndsWith("image", {"certutil.exe", "bitsadmin.exe"}));
@@ -28,7 +31,7 @@ MatchRule Make_lolblin_download() {
     return rule;
 }
 
-MatchRule Make_hidden_powershell() {
+MatchRule MakeHiddenPowershell() {
     MatchRule rule("hidden_powershell", Severity::kMedium);
     rule.AddCondition(Condition::Equals("type", {"process_start"}));
     rule.AddCondition(Condition::EndsWith("image", {"powershell.exe", "pwsh.exe"}));
@@ -37,46 +40,48 @@ MatchRule Make_hidden_powershell() {
     return rule;
 }
 
-MatchRule Make_autostart_write_path() {
+MatchRule MakeAutostartWritePath() {
     MatchRule rule("autostart_write", Severity::kHigh);
     rule.AddCondition(Condition::Equals("type", {"file_create", "file_write"}));
-    rule.AddCondition(Condition::Contains("path", {"\\start menu\\programs\\startup\\"}));
+    rule.AddCondition(Condition::Contains("path", {"\\start menu\\programs\\startup\\", "/start menu/programs/startup/"}));
     rule.AddAction("quarantine_file");
     return rule;
 }
 
-MatchRule Make_autostart_write_to() {
+MatchRule MakeAutostartWriteTo() {
     MatchRule rule("autostart_write", Severity::kHigh);
     rule.AddCondition(Condition::Equals("type", {"file_move"}));
-    rule.AddCondition(Condition::Contains("to", {"\\start menu\\programs\\startup\\"}));
+    rule.AddCondition(Condition::Contains("to", {"\\start menu\\programs\\startup\\", "/start menu/programs/startup/"}));
     rule.AddAction("quarantine_file");
     return rule;
 }
 
-MatchRule Make_ransom_extension_path() {
+MatchRule MakeRansomExtensionPath() {
     MatchRule by_path("ransom_extension", Severity::kCritical);
     by_path.AddCondition(Condition::Equals("type", {"file_create", "file_write"}));
     by_path.AddCondition(Condition::EndsWith("path", {".locked"}));
     by_path.AddAction("quarantine_file");
     return by_path;
 }
-MatchRule Make_ransom_extension_to() {
+
+MatchRule MakeRansomExtensionTo() {
     MatchRule by_to("ransom_extension", Severity::kCritical);
     by_to.AddCondition(Condition::Equals("type", {"file_move"}));
     by_to.AddCondition(Condition::EndsWith("to", {".locked"}));
     by_to.AddAction("quarantine_file");
     return by_to;
 }
+}  // namespace
 
 std::vector<MatchRule> BuildAgentRules() {
     std::vector<MatchRule> rules;
-    rules.push_back(Make_script_host_from_temp());
-    rules.push_back(Make_lolblin_download());
-    rules.push_back(Make_hidden_powershell());
-    rules.push_back(Make_autostart_write_path());
-    rules.push_back(Make_autostart_write_to());
-    rules.push_back(Make_ransom_extension_path());
-    rules.push_back(Make_ransom_extension_to());
+    rules.push_back(MakeScriptHostFromTemp());
+    rules.push_back(MakeLolbinDownload());
+    rules.push_back(MakeHiddenPowershell());
+    rules.push_back(MakeAutostartWritePath());
+    rules.push_back(MakeAutostartWriteTo());
+    rules.push_back(MakeRansomExtensionPath());
+    rules.push_back(MakeRansomExtensionTo());
     return rules;
 }
 }  // namespace nano_edr

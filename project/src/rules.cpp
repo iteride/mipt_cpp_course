@@ -3,17 +3,15 @@
 namespace nano_edr {
 
 const char* SeverityName(Severity severity) {
-    if (severity == Severity::kLow) {
-        return "low";
-    }
-    if (severity == Severity::kHigh) {
-        return "high";
-    }
-    if (severity == Severity::kCritical) {
-        return "critical";
-    }
-    if (severity == Severity::kMedium) {
-        return "medium";
+    switch (severity) {
+        case Severity::kLow:
+            return "low";
+        case Severity::kHigh:
+            return "high";
+        case Severity::kCritical:
+            return "critical";
+        case Severity::kMedium:
+            return "medium";
     }
     return "?";
 }

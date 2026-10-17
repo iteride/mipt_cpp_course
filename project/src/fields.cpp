@@ -1,5 +1,6 @@
 #include "fields.h"
 
+#include <charconv>
 #include <stdexcept>
 
 #include "text.h"
@@ -25,45 +26,24 @@ const std::string* FindField(const Event& event, const std::string& key) {
 }
 
 const std::string& GetRequiredField(const Event& event, const std::string& key) {
-    if (key == "type") {
-        return event.type();
-    }
-    if (key == "ts") {
-        return event.raw_ts();
-    }
-    if (key == "pid") {
-        return event.pid();
-    }
-    for (size_t i = 0; i < event.fields().size(); ++i) {
-        if (event.fields()[i].key == key) {
-            return event.fields()[i].value;
-        }
+    const std::string* value = FindField(event, key);
+    if (value != nullptr) {
+        return *value;
     }
     throw std::invalid_argument("field " + key + " not found");
-}
-
-bool is_number(const std::string* value) {
-    for (size_t i = 0; i < value->size(); i++) {
-        if ((*value)[i] < '0' || (*value)[i] > '9') {
-            return false;
-        }
-    }
-    return true;
 }
 
 bool GetIntField(const Event& event, const std::string& key, uint64_t* out) {
     const std::string* value = FindField(event, key);
     if (value != nullptr) {
-        if (is_number(value)) {
-            try {
-                *out = std::stoi(*value);
-                return true;
-            } catch (const std::exception& error) {
-                return false;
-            }
-        } else {
+        auto [ptr, ec] = std::from_chars(value->data(), value->data() + value->size(), *out);
+        if (ec != std::errc()) {
             return false;
         }
+        if (ptr != value->data() + value->size()) {
+            return false;
+        }
+        return true;
     }
     return false;
 }
@@ -71,15 +51,15 @@ bool GetIntField(const Event& event, const std::string& key, uint64_t* out) {
 uint64_t GetIntField(const Event& event, const std::string& key, uint64_t fallback) {
     const std::string* value = FindField(event, key);
     if (value != nullptr) {
-        if (is_number(value)) {
-            try {
-                return std::stoi(*value);
-            } catch (const std::exception& error) {
-                return false;
-            }
-        } else {
+        uint64_t out;
+        auto [ptr, ec] = std::from_chars(value->data(), value->data() + value->size(), out);
+        if (ec != std::errc()) {
             return fallback;
         }
+        if (ptr != value->data() + value->size()) {
+            return fallback;
+        }
+        return out;
     }
     return fallback;
 }
@@ -97,28 +77,9 @@ bool PathEndsWith(const Event& event, const std::string& suffix) {
     const std::string* value = FindField(event, "path");
     if (value != nullptr) {
         if (suffix.size() <= value->size()) {
-            const std::string path_end = To_Lower(value->substr(value->size() - suffix.size(), suffix.size()));
-            if (path_end == To_Lower(suffix)) {
-                return true;
-            } else {
-                return false;
-            }
+            return EndsWithNoCase(*value, suffix);
         } else {
             return false;
-        }
-    } else {
-        const std::string* value = FindField(event, "to");
-        if (value != nullptr) {
-            if (suffix.size() <= value->size()) {
-                const std::string path_end = To_Lower(value->substr(value->size() - suffix.size(), suffix.size()));
-                if (path_end == To_Lower(suffix)) {
-                    return true;
-                } else {
-                    return false;
-                }
-            } else {
-                return false;
-            }
         }
     }
     return false;
@@ -126,15 +87,7 @@ bool PathEndsWith(const Event& event, const std::string& suffix) {
 
 bool CommandLineContains(const Event& event, const std::string& needle) {
     const std::string* value = FindField(event, "cmdline");
-    if (value != nullptr) {
-        const std::string no_reg = NormalizePath(*value);
-        if (no_reg.find(To_Lower(needle)) == std::string::npos) {
-            return false;
-        } else {
-            return true;
-        }
-    }
-    return false;
+    return value != nullptr && ContainsNoCase(*value, needle);
 }
 
 std::string NormalizePath(const std::string& path) {
