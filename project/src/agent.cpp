@@ -59,10 +59,10 @@ void Agent::Trampoline(const os_event* ev, void* ctx) noexcept {
         const Event event = ToEvent(ev);
         self->HandleEvent(event);
     } catch (const std::exception& e) {
-        self->invalid_events_++;
+        self->CountBrokenEvent();
         std::print(stderr, "exception in trampoline {}\n", e.what());
     } catch (...) {
-        self->invalid_events_++;
+        self->CountBrokenEvent();
         std::print(stderr, "unknown exception in trampoline\n");
     }
 }

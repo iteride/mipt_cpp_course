@@ -22,8 +22,11 @@ void FileSource::Run(Agent* agent) {
                 Event event(out);
                 agent->HandleEvent(event);
             } catch (const std::exception& e) {
+                agent->CountBrokenEvent();
                 std::print(stderr, "broken_event: {}\n", e.what());
             }
+        } else {
+            agent->CountBrokenEvent();
         }
     }
 }

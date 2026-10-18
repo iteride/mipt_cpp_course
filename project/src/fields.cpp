@@ -51,7 +51,7 @@ bool GetIntField(const Event& event, const std::string& key, uint64_t* out) {
 uint64_t GetIntField(const Event& event, const std::string& key, uint64_t fallback) {
     const std::string* value = FindField(event, key);
     if (value != nullptr) {
-        uint64_t out;
+        uint64_t out = 0;
         auto [ptr, ec] = std::from_chars(value->data(), value->data() + value->size(), out);
         if (ec != std::errc()) {
             return fallback;
@@ -75,14 +75,7 @@ bool IsNetConnect(const Event& event) {
 }
 bool PathEndsWith(const Event& event, const std::string& suffix) {
     const std::string* value = FindField(event, "path");
-    if (value != nullptr) {
-        if (suffix.size() <= value->size()) {
-            return EndsWithNoCase(*value, suffix);
-        } else {
-            return false;
-        }
-    }
-    return false;
+    return value != nullptr && EndsWithNoCase(*value, suffix);
 }
 
 bool CommandLineContains(const Event& event, const std::string& needle) {

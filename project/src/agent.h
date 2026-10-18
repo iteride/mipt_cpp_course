@@ -15,6 +15,7 @@ class Agent {
     static void Trampoline(const os_event* ev, void* ctx) noexcept;
     void HandleEvent(const Event& event);
     void PrintSummary() const;
+    void CountBrokenEvent() { invalid_events_++; }
 
  private:
     EventList window_;
