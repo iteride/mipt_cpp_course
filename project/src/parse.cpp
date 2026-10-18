@@ -14,9 +14,6 @@ bool IsBlankOrComment(const std::string& line) {
 }
 
 bool ParseEventParts(const std::string& line, EventParts* out) {
-    if (IsBlankOrComment(line)) {
-        return false;
-    }
     std::string str = line + '\n';
     size_t ind = 0;
     size_t end = 0;

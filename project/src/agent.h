@@ -6,6 +6,7 @@
 #include "event.h"
 #include "event_list.h"
 #include "os.h"
+#include "rule.h"
 
 namespace nano_edr {
 class Agent {
@@ -14,14 +15,17 @@ class Agent {
     static void Trampoline(const os_event* ev, void* ctx) noexcept;
     void HandleEvent(const Event& event);
     void PrintSummary() const;
+    void CountBrokenEvent() { invalid_events_++; }
 
  private:
     EventList window_;
     bool quiet_ = false;
     size_t summary_ = 0;
+    size_t invalid_events_ = 0;
     size_t context_size_ = 2;
-    std::map<std::string, size_t> types;
+    std::map<std::string, size_t> types_;
     std::deque<const EventNode*> context_;
+    std::vector<MatchRule> rules_;
     // счётчики для сводки
 };
 }  // namespace nano_edr

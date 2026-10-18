@@ -17,12 +17,17 @@ void FileSource::Run(Agent* agent) {
     while (std::getline(log, line)) {
         EventParts out;
         bool is_event_valid = ParseEventParts(line, &out);
-        if (is_event_valid) {
-            try {
-                Event event(out);
-                agent->HandleEvent(event);
-            } catch (const std::exception& e) {
-                std::print(stderr, "broken_event: {}\n", e.what());
+        if (!IsBlankOrComment(line)) {
+            if (is_event_valid) {
+                try {
+                    Event event(out);
+                    agent->HandleEvent(event);
+                } catch (const std::exception& e) {
+                    agent->CountBrokenEvent();
+                    std::print(stderr, "broken_event: {}\n", e.what());
+                }
+            } else {
+                agent->CountBrokenEvent();
             }
         }
     }
