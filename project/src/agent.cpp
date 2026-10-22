@@ -39,10 +39,12 @@ void Agent::HandleEvent(const Event& event) {
     }
     std::vector<const IRule*> fired;
     engine_.ProcessEvent(event, &fired);
+    bool context = false;
     for (size_t i = 0; i < fired.size(); i++) {
-        if (!quiet_) {
+        if (!quiet_ && !context) {
             for (size_t j = 0; j < context_.size(); j++) {
                 std::print("[CTX] -{}: ts={} type={} pid={}\n", context_.size() - j, context_[j]->event.raw_ts(), context_[j]->event.type(), context_[j]->event.pid());
+                context = true;
             }
         }
         std::print("[DETECT] {}  {}  ts={} pid={}\n", SeverityName(fired[i]->severity()), fired[i]->id(), event.raw_ts(),
