@@ -8,7 +8,7 @@
 namespace nano_edr {
 FileSource::FileSource(const std::string& path) : path_(path) {}
 
-void FileSource::Run(Agent* agent) {
+void FileSource::Run(IEventHandler* handler) {
     std::string line;
     std::ifstream log(path_);
     if (!log) {
@@ -21,14 +21,16 @@ void FileSource::Run(Agent* agent) {
             if (is_event_valid) {
                 try {
                     Event event(out);
-                    agent->HandleEvent(event);
+                    handler->HandleEvent(event);
                 } catch (const std::exception& e) {
-                    agent->CountBrokenEvent();
+                    handler->OnBroken();
                     std::print(stderr, "broken_event: {}\n", e.what());
                 }
             } else {
-                agent->CountBrokenEvent();
+                handler->OnBroken();
             }
+        } else {
+            handler->OnSkipped();
         }
     }
 }

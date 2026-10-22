@@ -5,6 +5,7 @@
 #include <print>
 #include <string>
 
+#include "agent.h"
 #include "file_source.h"
 #include "os_source.h"
 
@@ -64,15 +65,15 @@ int main(int argc, char** argv) {
             return 2;
         }
     }
+    std::unique_ptr<IEventSource> source;
     Agent agent{ctx_count, quiet, context_size};
     try {
         if (!file) {
-            OsSource src(path);
-            src.Run(&agent);
+            source = std::make_unique<OsSource>(path);
         } else {
-            FileSource src(path);
-            src.Run(&agent);
+            source = std::make_unique<FileSource>(path);
         }
+        source->Run(&agent);
         agent.PrintSummary();
     } catch (const std::exception& e) {
         std::print(stderr, "{}\n", e.what());
