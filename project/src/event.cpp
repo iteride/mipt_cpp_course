@@ -35,5 +35,31 @@ Event::Event(const EventParts& parts) {
     ts_ = Timestamp{tmp};
     raw_ts_ = parts.ts;
     fields_ = parts.fields;
+    event_type_ = EventTypeFromString(type_);
+}
+
+EventType EventTypeFromString(const std::string& type) {
+    if (type == "process_start") {
+        return EventType::kProcessStart;
+    }
+    if (type == "process_end") {
+        return EventType::kProcessEnd;
+    }
+    if (type == "file_create") {
+        return EventType::kFileCreate;
+    }
+    if (type == "file_write") {
+        return EventType::kFileWrite;
+    }
+    if (type == "file_delete") {
+        return EventType::kFileDelete;
+    }
+    if (type == "file_move") {
+        return EventType::kFileMove;
+    }
+    if (type == "net_connect") {
+        return EventType::kNetConnect;
+    }
+    return EventType::kOther;
 }
 }  // namespace nano_edr

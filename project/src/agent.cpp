@@ -1,7 +1,6 @@
 #include "agent.h"
 
 #include <print>
-#include <string>
 
 #include "agent_rules.h"
 #include "event.h"
@@ -9,7 +8,7 @@
 #include "rules.h"
 
 namespace nano_edr {
-Agent::Agent(std::size_t window_size, bool quiet, size_t context_size) : window_(window_size), quiet_(quiet), context_size_(context_size), rules_(BuildAgentRules()) {
+Agent::Agent(std::size_t window_size, bool quiet, size_t context_size) : window_(window_size), quiet_(quiet), context_size_(context_size), engine_(BuildAgentRules()) {
     if (window_size) {
         context_size_ = std::min(context_size_, window_size);
     }
@@ -23,47 +22,11 @@ void Agent::PrintSummary() const {
         }
 
         std::print("\ndetects on rules:\n");
-        for (size_t i = 0; i < rules_.size(); i++) {
-            std::print("{}: {}\n", rules_[i].id(), rules_[i].hits());
+        for (size_t i = 0; i < engine_.size(); i++) {
+            std::print("{}: {}\n", engine_.rule(i).id(), engine_.rule(i).hits());
         }
 
-        std::print("\nInvalid events: {}\n", invalid_events_);
-    }
-}
-
-namespace {
-Event ToEvent(const os_event* ev) {
-    EventParts part;
-    part.ts = std::to_string(ev->ts);
-    if (ev->pid == 0) {
-        part.pid = "";
-    } else {
-        part.pid = std::to_string(ev->pid);
-    }
-    if (ev->type == nullptr) {
-        part.type = "";
-    } else {
-        part.type = ev->type;
-    }
-    for (size_t i = 0; i < ev->field_count; i++) {
-        part.fields.push_back({ev->fields[i].key, ev->fields[i].value});
-    }
-    Event event(part);
-    return event;
-}
-}  // namespace
-
-void Agent::Trampoline(const os_event* ev, void* ctx) noexcept {
-    auto self = static_cast<Agent*>(ctx);
-    try {
-        const Event event = ToEvent(ev);
-        self->HandleEvent(event);
-    } catch (const std::exception& e) {
-        self->CountBrokenEvent();
-        std::print(stderr, "exception in trampoline {}\n", e.what());
-    } catch (...) {
-        self->CountBrokenEvent();
-        std::print(stderr, "unknown exception in trampoline\n");
+        std::print("\nInvalid events: {}\n", broken_events_);
     }
 }
 
@@ -74,21 +37,33 @@ void Agent::HandleEvent(const Event& event) {
     if (context_.size() > context_size_) {
         context_.pop_front();
     }
+    std::vector<const IRule*> fired;
+    engine_.ProcessEvent(event, &fired);
     bool context = false;
-    for (size_t i = 0; i < rules_.size(); i++) {
-        if (rules_[i].Check(event)) {
-            if (!quiet_ && !context) {
-                for (size_t j = 0; j < context_.size(); j++) {
-                    std::print("[CTX] -{}: ts={} type={} pid={}\n", context_.size() - j, context_[j]->event.raw_ts(), context_[j]->event.type(), context_[j]->event.pid());
-                }
+    for (size_t i = 0; i < fired.size(); i++) {
+        if (!quiet_ && !context) {
+            for (size_t j = 0; j < context_.size(); j++) {
+                std::print("[CTX] -{}: ts={} type={} pid={}\n", context_.size() - j, context_[j]->event.raw_ts(), context_[j]->event.type(), context_[j]->event.pid());
                 context = true;
             }
-            std::print("[DETECT] {}  {}  ts={} pid={}\n", SeverityName(rules_[i].severity()), rules_[i].id(), event.raw_ts(),
-                       event.pid());
         }
+        std::print("[DETECT] {}  {}  ts={} pid={}\n", SeverityName(fired[i]->severity()), fired[i]->id(), event.raw_ts(),
+                   event.pid());
     }
     types_[event.type()]++;
     summary_++;
     window_.PushBack(event);
 }
+
+void Agent::OnSkipped() {
+    skiped_events_++;
+}
+
+void Agent::OnBroken() {
+    broken_events_++;
+}
+
+void Agent::OnTick() {
+}
+
 }  // namespace nano_edr

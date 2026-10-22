@@ -1,87 +1,143 @@
 #include "agent_rules.h"
 
+#include <memory>
 #include <string>
 
 #include "conditions.h"
+#include "event.h"
 #include "rule.h"
+#include "rule_engine.h"
 #include "rules.h"
 
 namespace nano_edr {
 
 namespace {
-MatchRule MakeScriptHostFromTemp() {
-    MatchRule rule("script_host_from_temp", Severity::kHigh);
-    rule.AddCondition(Condition::Equals("type", {"process_start"}));
-    rule.AddCondition(
-        Condition::EndsWith("image", {"wscript.exe", "cscript.exe"}));
-    rule.AddCondition(Condition::Contains("cmdline", {"\\appdata\\local\\temp\\", "/appdata/local/temp/",
-                                                      "\\windows\\temp\\", "/windows/temp/",
-                                                      "%temp%", "%tmp%"}));
-    rule.AddAction("kill_process");
+
+auto MakeScriptHostFromTemp() {
+    auto rule = std::make_unique<MatchRule>("script_host_from_temp", Severity::kHigh);
+    rule->AddCondition(std::make_unique<EventTypeIs>(std::vector<EventType>{EventType::kProcessStart}));
+    auto temp = std::make_unique<AnyOf>();
+    temp->Add(std::make_unique<FieldEndsWith>("image", "wscript.exe"));
+    temp->Add(std::make_unique<FieldEndsWith>("image", "cscript.exe"));
+    rule->AddCondition(std::move(temp));
+
+    temp = std::make_unique<AnyOf>();
+    temp->Add(std::make_unique<FieldContains>("cmdline", "\\appdata\\local\\temp\\"));
+    temp->Add(std::make_unique<FieldContains>("cmdline", "/appdata/local/temp/"));
+    temp->Add(std::make_unique<FieldContains>("cmdline", "\\windows\\temp\\"));
+    temp->Add(std::make_unique<FieldContains>("cmdline", "/windows/temp/"));
+    temp->Add(std::make_unique<FieldContains>("cmdline", "%temp%"));
+    temp->Add(std::make_unique<FieldContains>("cmdline", "%tmp%"));
+    rule->AddCondition(std::move(temp));
+    rule->AddAction("kill_process");
     return rule;
 }
 
-MatchRule MakeLolbinDownload() {
-    MatchRule rule("lolbin_download", Severity::kHigh);
-    rule.AddCondition(Condition::Equals("type", {"process_start"}));
-    rule.AddCondition(Condition::EndsWith("image", {"certutil.exe", "bitsadmin.exe"}));
-    rule.AddCondition(Condition::Contains("cmdline", {"urlcache", "transfer",
-                                                      "http:", "https:"}));
-    rule.AddAction("kill_process");
+auto MakeLolbinDownload() {
+    auto rule = std::make_unique<MatchRule>("lolbin_download", Severity::kHigh);
+    rule->AddCondition(std::make_unique<EventTypeIs>(std::vector<EventType>{EventType::kProcessStart}));
+    auto temp = std::make_unique<AnyOf>();
+    temp->Add(std::make_unique<FieldEndsWith>("image", "certutil.exe"));
+    temp->Add(std::make_unique<FieldEndsWith>("image", "bitsadmin.exe"));
+    rule->AddCondition(std::move(temp));
+
+    temp = std::make_unique<AnyOf>();
+    temp->Add(std::make_unique<FieldContains>("cmdline", "-w hidden"));
+    temp->Add(std::make_unique<FieldContains>("cmdline", "transfer"));
+    temp->Add(std::make_unique<FieldContains>("cmdline", "http:"));
+    temp->Add(std::make_unique<FieldContains>("cmdline", "https:"));
+    rule->AddCondition(std::move(temp));
+    rule->AddAction("kill_process");
     return rule;
 }
 
-MatchRule MakeHiddenPowershell() {
-    MatchRule rule("hidden_powershell", Severity::kMedium);
-    rule.AddCondition(Condition::Equals("type", {"process_start"}));
-    rule.AddCondition(Condition::EndsWith("image", {"powershell.exe", "pwsh.exe"}));
-    rule.AddCondition(Condition::Contains("cmdline", {"-w hidden", "-windowstyle hidden", "-enc", "-encodedcommand"}));
-    rule.AddAction("kill_process");
+auto MakeHiddenPowershell() {
+    auto rule = std::make_unique<MatchRule>("hidden_powershell", Severity::kMedium);
+    rule->AddCondition(std::make_unique<EventTypeIs>(std::vector<EventType>{EventType::kProcessStart}));
+    auto temp = std::make_unique<AnyOf>();
+    temp->Add(std::make_unique<FieldEndsWith>("image", "powershell.exe"));
+    temp->Add(std::make_unique<FieldEndsWith>("image", "pwsh.exe"));
+    rule->AddCondition(std::move(temp));
+
+    temp = std::make_unique<AnyOf>();
+    temp->Add(std::make_unique<FieldContains>("cmdline", "urlcache"));
+    temp->Add(std::make_unique<FieldContains>("cmdline", "-windowstyle hidden"));
+    temp->Add(std::make_unique<FieldContains>("cmdline", "-enc"));
+    temp->Add(std::make_unique<FieldContains>("cmdline", "-encodedcommand"));
+    rule->AddCondition(std::move(temp));
+    rule->AddAction("kill_process");
     return rule;
 }
 
-MatchRule MakeAutostartWritePath() {
-    MatchRule rule("autostart_write", Severity::kHigh);
-    rule.AddCondition(Condition::Equals("type", {"file_create", "file_write"}));
-    rule.AddCondition(Condition::Contains("path", {"\\start menu\\programs\\startup\\", "/start menu/programs/startup/"}));
-    rule.AddAction("quarantine_file");
+auto MakeAutostartWrite() {
+    auto rule = std::make_unique<MatchRule>("autostart_write", Severity::kHigh);
+    rule->AddCondition(std::make_unique<EventTypeIs>(std::vector<EventType>{EventType::kFileWrite, EventType::kFileCreate, EventType::kFileMove}));
+    auto temp = std::make_unique<AnyOf>();
+    temp->Add(std::make_unique<FieldEndsWith>("image", "powershell.exe"));
+    temp->Add(std::make_unique<FieldEndsWith>("image", "pwsh.exe"));
+    rule->AddCondition(std::move(temp));
+
+    temp = std::make_unique<AnyOf>();
+    temp->Add(std::make_unique<FieldContains>("path", "\\start menu\\programs\\startup\\"));
+    temp->Add(std::make_unique<FieldContains>("path", "/start menu/programs/startup/"));
+    temp->Add(std::make_unique<FieldContains>("to", "\\start menu\\programs\\startup\\"));
+    temp->Add(std::make_unique<FieldContains>("to", "/start menu/programs/startup/"));
+    rule->AddCondition(std::move(temp));
+    rule->AddAction("quarantine_file");
     return rule;
 }
 
-MatchRule MakeAutostartWriteTo() {
-    MatchRule rule("autostart_write", Severity::kHigh);
-    rule.AddCondition(Condition::Equals("type", {"file_move"}));
-    rule.AddCondition(Condition::Contains("to", {"\\start menu\\programs\\startup\\", "/start menu/programs/startup/"}));
-    rule.AddAction("quarantine_file");
+auto MakeRansomExtension() {
+    auto rule = std::make_unique<MatchRule>("ransom_extension", Severity::kCritical);
+    rule->AddCondition(std::make_unique<EventTypeIs>(std::vector<EventType>{EventType::kFileWrite, EventType::kFileCreate, EventType::kFileMove}));
+    auto temp = std::make_unique<AnyOf>();
+    temp->Add(std::make_unique<FieldEndsWith>("path", ".locked"));
+    temp->Add(std::make_unique<FieldEndsWith>("to", ".locked"));
+    rule->AddCondition(std::move(temp));
+    rule->AddAction("quarantine_file");
     return rule;
 }
 
-MatchRule MakeRansomExtensionPath() {
-    MatchRule by_path("ransom_extension", Severity::kCritical);
-    by_path.AddCondition(Condition::Equals("type", {"file_create", "file_write"}));
-    by_path.AddCondition(Condition::EndsWith("path", {".locked"}));
-    by_path.AddAction("quarantine_file");
-    return by_path;
+auto ScriptHostBeacon() {
+    auto beacon = std::make_unique<SequenceRule>("script_host_beacon",
+                                                 Severity::kCritical, 10000);
+    auto first = std::make_unique<AllOf>();
+    first->Add(std::make_unique<EventTypeIs>(std::vector<EventType>({EventType::kProcessStart})));
+
+    auto temp = std::make_unique<AnyOf>();
+    temp->Add(std::make_unique<FieldEndsWith>("image", "wscript.exe"));
+    temp->Add(std::make_unique<FieldEndsWith>("image", "cscript.exe"));
+
+    first->Add(std::move(temp));
+
+    temp = std::make_unique<AnyOf>();
+    temp->Add(std::make_unique<FieldContains>("cmdline", "\\appdata\\local\\temp\\"));
+    temp->Add(std::make_unique<FieldContains>("cmdline", "/appdata/local/temp/"));
+    temp->Add(std::make_unique<FieldContains>("cmdline", "\\windows\\temp\\"));
+    temp->Add(std::make_unique<FieldContains>("cmdline", "/windows/temp/"));
+    temp->Add(std::make_unique<FieldContains>("cmdline", "%temp%"));
+    temp->Add(std::make_unique<FieldContains>("cmdline", "%tmp%"));
+
+    first->Add(std::move(temp));
+
+    beacon->SetFirst(std::move(first));
+
+    beacon->SetSecond(std::make_unique<EventTypeIs>(
+        std::vector<EventType>{EventType::kNetConnect}));
+    beacon->AddAction("kill_process");
+    return beacon;
 }
 
-MatchRule MakeRansomExtensionTo() {
-    MatchRule by_to("ransom_extension", Severity::kCritical);
-    by_to.AddCondition(Condition::Equals("type", {"file_move"}));
-    by_to.AddCondition(Condition::EndsWith("to", {".locked"}));
-    by_to.AddAction("quarantine_file");
-    return by_to;
-}
 }  // namespace
 
-std::vector<MatchRule> BuildAgentRules() {
-    std::vector<MatchRule> rules;
-    rules.push_back(MakeScriptHostFromTemp());
-    rules.push_back(MakeLolbinDownload());
-    rules.push_back(MakeHiddenPowershell());
-    rules.push_back(MakeAutostartWritePath());
-    rules.push_back(MakeAutostartWriteTo());
-    rules.push_back(MakeRansomExtensionPath());
-    rules.push_back(MakeRansomExtensionTo());
-    return rules;
+RuleEngine BuildAgentRules() {
+    RuleEngine engine;
+    engine.AddRule(MakeScriptHostFromTemp());
+    engine.AddRule(MakeLolbinDownload());
+    engine.AddRule(MakeHiddenPowershell());
+    engine.AddRule(MakeAutostartWrite());
+    engine.AddRule(MakeRansomExtension());
+    engine.AddRule(ScriptHostBeacon());
+    return engine;
 }
 }  // namespace nano_edr
