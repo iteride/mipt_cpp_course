@@ -42,7 +42,7 @@ auto MakeLolbinDownload() {
     rule->AddCondition(std::move(temp));
 
     temp = std::make_unique<AnyOf>();
-    temp->Add(std::make_unique<FieldContains>("cmdline", "-w hidden"));
+    temp->Add(std::make_unique<FieldContains>("cmdline", "urlcache"));
     temp->Add(std::make_unique<FieldContains>("cmdline", "transfer"));
     temp->Add(std::make_unique<FieldContains>("cmdline", "http:"));
     temp->Add(std::make_unique<FieldContains>("cmdline", "https:"));
@@ -60,7 +60,7 @@ auto MakeHiddenPowershell() {
     rule->AddCondition(std::move(temp));
 
     temp = std::make_unique<AnyOf>();
-    temp->Add(std::make_unique<FieldContains>("cmdline", "urlcache"));
+    temp->Add(std::make_unique<FieldContains>("cmdline", "-w hidden"));
     temp->Add(std::make_unique<FieldContains>("cmdline", "-windowstyle hidden"));
     temp->Add(std::make_unique<FieldContains>("cmdline", "-enc"));
     temp->Add(std::make_unique<FieldContains>("cmdline", "-encodedcommand"));
@@ -71,13 +71,7 @@ auto MakeHiddenPowershell() {
 
 auto MakeAutostartWrite() {
     auto rule = std::make_unique<MatchRule>("autostart_write", Severity::kHigh);
-    rule->AddCondition(std::make_unique<EventTypeIs>(std::vector<EventType>{EventType::kFileWrite, EventType::kFileCreate, EventType::kFileMove}));
     auto temp = std::make_unique<AnyOf>();
-    temp->Add(std::make_unique<FieldEndsWith>("image", "powershell.exe"));
-    temp->Add(std::make_unique<FieldEndsWith>("image", "pwsh.exe"));
-    rule->AddCondition(std::move(temp));
-
-    temp = std::make_unique<AnyOf>();
     temp->Add(std::make_unique<FieldContains>("path", "\\start menu\\programs\\startup\\"));
     temp->Add(std::make_unique<FieldContains>("path", "/start menu/programs/startup/"));
     temp->Add(std::make_unique<FieldContains>("to", "\\start menu\\programs\\startup\\"));
