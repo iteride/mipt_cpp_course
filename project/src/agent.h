@@ -1,6 +1,5 @@
 #pragma once
 
-#include <deque>
 #include <map>
 
 #include "event.h"
@@ -35,7 +34,6 @@ class Agent : public IEventHandler {
     size_t broken_events_ = 0;
     size_t context_size_ = 2;
     std::map<std::string, size_t> types_;
-    std::deque<WindowEntry> context_;
     RuleEngine engine_;
     RingBuffer<WindowEntry, kWindowCapacity> window_;
     // счётчики для сводки

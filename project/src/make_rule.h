@@ -17,7 +17,7 @@
 #include <memory>
 #include <string>
 
-#include "rule.h"
+#include "rules.h"
 
 namespace nano_edr {
 
