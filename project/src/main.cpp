@@ -1,5 +1,4 @@
 
-#include <charconv>
 #include <cstdio>
 #include <exception>
 #include <print>
@@ -13,7 +12,6 @@ using namespace nano_edr;
 
 int main(int argc, char** argv) {
     bool quiet = false;
-    size_t ctx_count = 0;
     bool file = false;
     std::string path;
     std::string args = "";
@@ -26,16 +24,6 @@ int main(int argc, char** argv) {
         args = std::string(argv[i]);
         if (std::string(argv[i]) == "--quiet") {
             quiet = true;
-            continue;
-        }
-        if (std::string(argv[i]) == "--window-size") {
-            if (i + 1 < argc) {
-                std::from_chars(std::string(argv[i + 1]).data(), std::string(argv[i + 1]).data() + std::string(argv[i + 1]).size(), ctx_count);
-            } else {
-                std::print(stderr, "There is no size after --window-size.\n");
-                return 2;
-            }
-            i++;
             continue;
         }
         if (args == "--file") {
@@ -66,7 +54,7 @@ int main(int argc, char** argv) {
         }
     }
     std::unique_ptr<IEventSource> source;
-    Agent agent{ctx_count, quiet, context_size};
+    Agent agent{quiet, context_size};
     try {
         if (!file) {
             source = std::make_unique<OsSource>(path);
