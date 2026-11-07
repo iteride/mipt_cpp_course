@@ -29,6 +29,7 @@
 #define NANO_EDR_RING_BUFFER_H
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 
 namespace nano_edr {
@@ -56,22 +57,21 @@ class RingBuffer {
         }
 
      private:
-        const RingBuffer* buf_;
-        size_t index_;
+        const RingBuffer* buf_ = nullptr;
+        size_t index_ = 0;
     };
 
     // Дописывает элемент. Если буфер полон, самый старый затирается — окно,
     // а не архив.
     void PushBack(const T& value) {
         if (full()) {
-            dest_[head_] = value;
-            last_ = head_++;
+            dest_.at(head_) = value;
+            head_++;
             if (head_ == N) {
                 head_ = 0;
             }
         } else {
-            dest_[size_] = value;
-            last_ = size_;
+            dest_.at(size_) = value;
         }
         size_ = std::min(size_ + 1, N);
     }
@@ -79,7 +79,6 @@ class RingBuffer {
     void Clear() {
         head_ = 0;
         size_ = 0;
-        last_ = 0;
     }
 
     std::size_t size() const { return size_; }
@@ -89,29 +88,28 @@ class RingBuffer {
 
     // По логическому индексу: 0 — самый старый.
     const T& operator[](std::size_t index) const {
-        return dest_[(head_ + index) % N];
+        return dest_.at((head_ + index) % N);
     }
 
     // Самый новый элемент. Вызывать на пустом буфере нельзя — это ошибка
     // в коде вызывающего, а не случай, который надо обрабатывать.
     const T& back() const {
-        return dest_[last_];
+        return (*this)[size_ - 1];
     }
 
     Iterator begin() const {
-        Iterator begin_(this, 0);
-        return begin_;
+        Iterator begin(this, 0);
+        return begin;
     }
     Iterator end() const {
-        Iterator end_(this, size_);
-        return end_;
+        Iterator end(this, size_);
+        return end;
     }
 
  private:
-    T dest_[N];
+    std::array<T, N> dest_;
     size_t size_ = 0;
     size_t head_ = 0;
-    size_t last_ = 0;
 };
 
 }  // namespace nano_edr
