@@ -65,7 +65,7 @@ class RingBuffer {
     // а не архив.
     void PushBack(const T& value) {
         if (full()) {
-            dest_.at(head_) = value;
+            dest_[head_] = value;
             head_++;
             if (head_ == N) {
                 head_ = 0;
@@ -107,7 +107,7 @@ class RingBuffer {
     }
 
  private:
-    std::array<T, N> dest_;
+    std::array<T, N> dest_{};
     size_t size_ = 0;
     size_t head_ = 0;
 };
