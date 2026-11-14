@@ -40,7 +40,7 @@ void FanOutSink::Add(AlertSink sink) {
 }
 
 void FanOutSink::operator()(const Detection& detection) const {
-    for (auto sink : sinks_) {
+    for (auto& sink : sinks_) {
         sink(detection);
     }
 }
@@ -50,6 +50,11 @@ void FanOutSink::operator()(const Detection& detection) const {
 DedupSink::DedupSink(AlertSink inner, uint64_t period_ms, std::size_t* suppressed) : inner_(inner), period_ms_(period_ms), suppressed_(suppressed) {}
 
 void DedupSink::operator()(const Detection& detection) {
+    if (period_ms_ == 0) {
+        inner_(detection);
+        return;
+    }
+
     for (auto& record : history_) {
         if (detection.pid == record.pid && detection.rule == record.rule) {
             if (detection.ts.ms - record.first_ts <= period_ms_) {

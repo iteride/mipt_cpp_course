@@ -70,24 +70,24 @@ int main(int argc, char** argv) {
             return 2;
         }
     }
-    std::unique_ptr<IEventSource> source;
-    EdrHandle edr(option.path);
-    const std::string text = edr.Config("dedup_period_ms", "10000");
-    uint64_t dedup_period_ms = 0;
-    if (!FieldTraits<uint64_t>::Parse(text, &dedup_period_ms)) {
-        std::print(stderr, "[WARN] dedup_period_ms не разбирается: {}\n", text);
-        dedup_period_ms = 10000;
-    }
-    Agent agent{option.quiet, option.context_size, dedup_period_ms};
-
-    FanOutSink targets;
-    targets.Add(ConsoleSink());
-    if (!option.out.empty()) {
-        targets.Add(FileSink(option.out));
-    }
-    targets.Add(EdrSink(&edr));
-    agent.Subscribe(std::move(targets));
     try {
+        std::unique_ptr<IEventSource> source;
+        EdrHandle edr(option.path);
+        const std::string text = edr.Config("dedup_period_ms", "10000");
+        uint64_t dedup_period_ms = 0;
+        if (!FieldTraits<uint64_t>::Parse(text, &dedup_period_ms)) {
+            std::print(stderr, "[WARN] dedup_period_ms не разбирается: {}\n", text);
+            dedup_period_ms = 10000;
+        }
+        Agent agent{option.quiet, option.context_size, dedup_period_ms};
+
+        FanOutSink targets;
+        targets.Add(ConsoleSink());
+        if (!option.out.empty()) {
+            targets.Add(FileSink(option.out));
+        }
+        targets.Add(EdrSink(&edr));
+        agent.Subscribe(std::move(targets));
         if (!option.file) {
             source = std::make_unique<OsSource>(option.path);
         } else {
