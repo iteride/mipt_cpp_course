@@ -17,7 +17,7 @@ struct WindowEntry {
 
 class Agent : public IEventHandler {
  public:
-    explicit Agent(bool quiet, size_t context_size);  // из --window-size и --quiet
+    explicit Agent(bool quiet, size_t context_size, uint64_t dedup_period_ms);  // из --window-size и --quiet
     static constexpr std::size_t kWindowCapacity = 256;
     void HandleEvent(const Event& event) override;
     void OnSkipped() override;
@@ -26,16 +26,22 @@ class Agent : public IEventHandler {
     void PrintSummary() const;
     void CountBrokenEvent() { broken_events_++; }
     void CountSkipedEvent() { skiped_events_++; }
+    void Subscribe(AlertSink sink);
 
  private:
+    void PrintContextOnce();
     bool quiet_ = false;
     size_t summary_ = 0;
     size_t skiped_events_ = 0;
     size_t broken_events_ = 0;
     size_t context_size_ = 2;
+    uint64_t dedup_period_ms_{};
+    std::size_t suppressed_{};
     std::map<std::string, size_t> types_;
-    RuleEngine engine_;
     RingBuffer<WindowEntry, kWindowCapacity> window_;
+    bool context_ = false;
+    EntityModel model_;
+    RuleEngine engine_;
     // счётчики для сводки
 };
 }  // namespace nano_edr

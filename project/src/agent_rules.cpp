@@ -142,9 +142,64 @@ auto MakeRansomwareMassWrite() {
     return mass_write;
 }
 
+auto MakeShellSpawnScriptHost(const EntityModel* model) {
+    auto shell = MakeRule<SequenceRule>("shell_spawns_script_host",
+                                        Severity::kHigh, 30000);
+
+    auto first = std::make_unique<AllOf>();
+    first->Add(std::make_unique<EventTypeIs>(std::vector<EventType>{EventType::kProcessStart}));
+
+    auto temp = std::make_unique<AnyOf>();
+    temp->Add(std::make_unique<FieldEndsWith>("image", "cmd.exe"));
+    temp->Add(std::make_unique<FieldEndsWith>("image", "powershell.exe"));
+    temp->Add(std::make_unique<FieldEndsWith>("image", "pwsh.exe"));
+
+    first->Add(std::move(temp));
+
+    shell->SetFirst(std::move(first));
+
+    auto second = std::make_unique<AllOf>();
+    second->Add(std::make_unique<EventTypeIs>(std::vector<EventType>{EventType::kProcessStart}));
+
+    temp = std::make_unique<AnyOf>();
+    temp->Add(std::make_unique<FieldEndsWith>("image", "wscript.exe"));
+    temp->Add(std::make_unique<FieldEndsWith>("image", "cscript.exe"));
+
+    second->Add(std::move(temp));
+    shell->SetSecond(std::move(second));
+
+    shell->set_child_of_prev(true);
+    shell->SetModel(model);
+    shell->AddAction("kill_process");
+
+    return shell;
+}
+
+auto MakeSpawnedFromDroppedFile(const EntityModel* model) {
+    auto dropped = MakeRule<LambdaRule>(
+        "spawned_from_dropped_file", Severity::kHigh,
+        [model](const Event& event) {
+            if (event.event_type() != EventType::kProcessStart) {
+                return false;
+            }
+            const FileRecord* source = model->FindSpawnSource(event.pid());
+            if (source != nullptr) {
+                if (!source->writer_pid.empty() && source->writer_pid != event.pid()) {
+                    return true;
+                }
+            }
+            return false;
+        });
+    dropped->AddAction("kill_process");
+    dropped->AddAction("quarantine_file");
+    return dropped;
+}
+
 }  // namespace
 
-RuleEngine BuildAgentRules() {
+// namespace
+
+RuleEngine BuildAgentRules(const EntityModel* model) {
     RuleEngine engine;
     engine.AddRule(MakeScriptHostFromTemp());
     engine.AddRule(MakeLolbinDownload());
@@ -153,6 +208,8 @@ RuleEngine BuildAgentRules() {
     engine.AddRule(MakeRansomExtension());
     engine.AddRule(MakeScriptHostBeacon());
     engine.AddRule(MakeRansomwareMassWrite());
+    engine.AddRule(MakeShellSpawnScriptHost(model));
+    engine.AddRule(MakeSpawnedFromDroppedFile(model));
     return engine;
 }
 }  // namespace nano_edr
