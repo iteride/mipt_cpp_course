@@ -85,7 +85,7 @@ bool SequenceRule::Check(const Event& event) {
 }
 
 LambdaRule::LambdaRule(const std::string& id, Severity severity, Predicate predicate)
-    : RuleBase(id, severity), predicate_(predicate) {}
+    : RuleBase(id, severity), predicate_(std::move(predicate)) {}
 bool LambdaRule::Check(const Event& event) {
     if (!predicate_) {
         return false;

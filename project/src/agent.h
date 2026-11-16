@@ -39,7 +39,7 @@ class Agent : public IEventHandler {
     std::size_t suppressed_{};
     std::map<std::string, size_t> types_;
     RingBuffer<WindowEntry, kWindowCapacity> window_;
-    bool context_ = false;
+    bool context_printed_ = false;
     EntityModel model_;
     RuleEngine engine_;
     // счётчики для сводки

@@ -23,14 +23,6 @@
 
 namespace nano_edr {
 
-namespace {
-struct Record {
-    std::string rule = "";
-    std::string pid = "";
-    uint64_t first_ts = 0;
-};
-}  // namespace
-
 class DedupSink {
  public:
     // inner — куда пропускать; period_ms — на сколько замолкать; suppressed —
@@ -40,6 +32,11 @@ class DedupSink {
     void operator()(const Detection& detection);
 
  private:
+    struct Record {
+        std::string rule = "";
+        std::string pid = "";
+        uint64_t first_ts = 0;
+    };
     AlertSink inner_;
     uint64_t period_ms_ = 10000;
     std::size_t* suppressed_ = nullptr;

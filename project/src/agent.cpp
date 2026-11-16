@@ -37,7 +37,7 @@ void Agent::PrintSummary() const {
 void Agent::HandleEvent(const Event& event) {
     model_.Observe(event);
     std::vector<const IRule*> fired;
-    context_ = false;
+    context_printed_ = false;
     engine_.ProcessEvent(event, &fired);
     types_[event.type()]++;
     summary_++;
@@ -54,7 +54,7 @@ void Agent::Subscribe(AlertSink sink) {
 }
 
 void Agent::PrintContextOnce() {
-    if (context_) {
+    if (context_printed_) {
         return;
     }
     size_t start = 0;
@@ -65,7 +65,7 @@ void Agent::PrintContextOnce() {
     for (size_t j = start; j < w_size; j++) {
         std::print("[CTX] -{}: {} {} pid={}\n", w_size - j, window_[j].ts.ms, window_[j].type, window_[j].pid);
     }
-    context_ = true;
+    context_printed_ = true;
 }
 
 void Agent::OnSkipped() {
