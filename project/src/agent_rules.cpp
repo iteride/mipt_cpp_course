@@ -32,6 +32,8 @@ auto MakeScriptHostFromTemp() {
     temp->Add(std::make_unique<FieldContains>("cmdline", "%tmp%"));
     rule->AddCondition(std::move(temp));
     rule->AddAction("kill_process");
+    rule->AddAction("quarantine_source");
+    rule->AddAction("delete_dropped");
     return rule;
 }
 
@@ -79,7 +81,7 @@ auto MakeAutostartWrite() {
     temp->Add(std::make_unique<FieldContains>("to", "\\start menu\\programs\\startup\\"));
     temp->Add(std::make_unique<FieldContains>("to", "/start menu/programs/startup/"));
     rule->AddCondition(std::move(temp));
-    rule->AddAction("quarantine_file");
+    rule->AddAction("delete_evidence");
     return rule;
 }
 
@@ -90,7 +92,8 @@ auto MakeRansomExtension() {
     temp->Add(std::make_unique<FieldEndsWith>("path", ".locked"));
     temp->Add(std::make_unique<FieldEndsWith>("to", ".locked"));
     rule->AddCondition(std::move(temp));
-    rule->AddAction("quarantine_file");
+    rule->AddAction("kill_process");
+    rule->AddAction("quarantine_image");
     return rule;
 }
 
@@ -138,7 +141,7 @@ auto MakeRansomwareMassWrite() {
                     FieldContains("to", "\\Documents\\"),
                     FieldContains("to", "\\Desktop\\")))));
     mass_write->AddAction("kill_process");
-    mass_write->AddAction("quarantine_file");
+    mass_write->AddAction("quarantine_image");
     return mass_write;
 }
 
@@ -191,7 +194,8 @@ auto MakeSpawnedFromDroppedFile(const EntityModel* model) {
             return false;
         });
     dropped->AddAction("kill_process");
-    dropped->AddAction("quarantine_file");
+    dropped->AddAction("quarantine_source");
+    dropped->AddAction("delete_dropped");
     return dropped;
 }
 

@@ -76,6 +76,19 @@ class RingBuffer {
         size_ = std::min(size_ + 1, N);
     }
 
+    void PushBack(T&& value) {
+        if (full()) {
+            dest_[head_] = std::move(value);
+            head_++;
+            if (head_ == N) {
+                head_ = 0;
+            }
+        } else {
+            dest_.at(size_) = std::move(value);
+        }
+        size_ = std::min(size_ + 1, N);
+    }
+
     void Clear() {
         head_ = 0;
         size_ = 0;

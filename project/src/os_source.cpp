@@ -29,7 +29,7 @@ Event ToEvent(const os_event* ev) {
     for (size_t i = 0; i < ev->field_count; i++) {
         part.fields.push_back({ev->fields[i].key, ev->fields[i].value});
     }
-    Event event(part);
+    Event event(std::move(part));
     return event;
 }
 }  // namespace

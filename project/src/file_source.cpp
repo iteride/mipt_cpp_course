@@ -20,7 +20,7 @@ void FileSource::Run(IEventHandler* handler) {
         if (!IsBlankOrComment(line)) {
             if (is_event_valid) {
                 try {
-                    Event event(out);
+                    Event event(std::move(out));
                     handler->HandleEvent(event);
                 } catch (const std::exception& e) {
                     handler->OnBroken();

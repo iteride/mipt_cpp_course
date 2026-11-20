@@ -26,6 +26,16 @@ bool EndsWithNoCase(const std::string& value, const std::string& suffix) {
     return true;
 }
 
+bool StartWithNoCase(const std::string& value, const std::string& preffix) {
+    for (size_t i = 0; i < preffix.size() && i < value.size(); i++) {
+        if (std::tolower(static_cast<unsigned char>(value[i])) !=
+            std::tolower(static_cast<unsigned char>(preffix[i]))) {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool ContainsNoCase(const std::string& value, const std::string& needle) {
     if (needle.empty()) {
         return true;

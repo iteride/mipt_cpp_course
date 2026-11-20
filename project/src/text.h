@@ -10,5 +10,6 @@ bool EndsWithNoCase(const std::string& value, const std::string& suffix);
 
 bool ContainsNoCase(const std::string& value, const std::string& needle);
 
+bool StartWithNoCase(const std::string& value, const std::string& preffix);
 bool EqualNoCase(const std::string& value1, const std::string& value2);
 }  // namespace nano_edr

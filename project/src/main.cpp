@@ -5,6 +5,7 @@
 #include <string>
 
 #include "agent.h"
+#include "copy_stats.h"
 #include "edr_handle.h"
 #include "field_traits.h"
 #include "file_source.h"
@@ -18,6 +19,8 @@ struct options {
     std::string out = "";
     bool quiet = false;
     bool file = false;
+    bool copies = false;
+    bool dry_run = false;
 };
 
 int main(int argc, char** argv) {
@@ -29,8 +32,16 @@ int main(int argc, char** argv) {
     }
     for (int i = 1; i < argc; ++i) {
         args = std::string(argv[i]);
-        if (std::string(argv[i]) == "--quiet") {
+        if (args == "--quiet") {
             option.quiet = true;
+            continue;
+        }
+        if (args == "--copies") {
+            option.copies = true;
+            continue;
+        }
+        if (args == "--dry-run") {
+            option.dry_run = true;
             continue;
         }
         if (args == "--file") {
@@ -93,11 +104,19 @@ int main(int argc, char** argv) {
         } else {
             source = std::make_unique<FileSource>(option.path);
         }
+        agent.EnableResponse(source->os(), option.dry_run,
+                             edr.Config("quarantine_dir", "C:\\quarantine"));
         source->Run(&agent);
         if (edr.Flush() != EDR_OK) {
             std::print(stderr, "[WARN] детекты не отправлены\n");
         }
         agent.PrintSummary();
+        if (option.copies) {
+            std::print("[COPY] строк события скопировано {}, перемещено {}\n", copy_stats().event_strings_copied, copy_stats().event_strings_moved);
+            std::print("[COPY] записей WindowEntry скопировано {}, перемещено {}\n", copy_stats().window_copied, copy_stats().window_moved);
+            std::print("[COPY] событий скопировано в детекты {}\n", copy_stats().evidence_copied);
+            std::print("[COPY] копий всего {}\n", copy_stats().total());
+        }
     } catch (const std::exception& e) {
         std::print(stderr, "{}\n", e.what());
         return 1;
