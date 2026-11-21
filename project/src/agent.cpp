@@ -31,6 +31,13 @@ void Agent::PrintSummary() const {
         if (suppressed_ > 0) {
             std::print("[STAT] {} duplicates suppressed (period {} ms)\n", suppressed_, dedup_period_ms_);
         }
+        if (responder_ != nullptr) {
+            std::print("[STAT] действий запланировано {}, повторов отброшено {}\n", responder_->stats().planned, responder_->stats().skipped_repeat);
+            std::print("[STAT] завершено процессов {}, изолировано файлов {}, удалено файлов {}\n", responder_->stats().killed, responder_->stats().quarantined, responder_->stats().deleted);
+            if (responder_->stats().own_events > 0) {
+                std::print("[STAT] своих событий {}\n", responder_->stats().own_events);
+            }
+        }
     }
 }
 
