@@ -24,7 +24,7 @@ namespace nano_edr {
 template <typename Rule, typename... Args>
 std::unique_ptr<Rule> MakeRule(const std::string& id, Severity severity,
                                Args... args) {
-    auto rule = std::make_unique<Rule>(id, severity, args...);
+    auto rule = std::make_unique<Rule>(id, severity, std::move(args)...);
     return rule;
 }
 

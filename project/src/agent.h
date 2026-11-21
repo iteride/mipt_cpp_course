@@ -4,16 +4,12 @@
 
 #include "event.h"
 #include "event_source.h"
+#include "response.h"
 #include "ring_buffer.h"
 #include "rule_engine.h"
+#include "window_entry.h"
 
 namespace nano_edr {
-
-struct WindowEntry {
-    Timestamp ts;
-    std::string type;
-    std::string pid;
-};
 
 class Agent : public IEventHandler {
  public:
@@ -27,6 +23,8 @@ class Agent : public IEventHandler {
     void CountBrokenEvent() { broken_events_++; }
     void CountSkipedEvent() { skiped_events_++; }
     void Subscribe(AlertSink sink);
+    void EnableResponse(OsHandle* os, bool dry_run,
+                        const std::string& quarantine_dir);
 
  private:
     void PrintContextOnce();
@@ -42,6 +40,8 @@ class Agent : public IEventHandler {
     bool context_printed_ = false;
     EntityModel model_;
     RuleEngine engine_;
+    std::unique_ptr<ResponsePlanner> planner_{};
+    std::unique_ptr<Responder> responder_{};
     // счётчики для сводки
 };
 }  // namespace nano_edr
